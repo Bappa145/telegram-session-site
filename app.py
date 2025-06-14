@@ -2,14 +2,15 @@ from flask import Flask, request, render_template, jsonify
 from telethon.sync import TelegramClient
 from telethon.sessions import StringSession
 import asyncio
+import nest_asyncio
 
-# এখানে তোমার Telegram API ID ও Hash বসাও
-api_id = 27078605       # <-- Replace this
-api_hash = '52699dafb896a139789c88bc5c52f499'  # <-- Replace this
+# Telegram API info
+api_id = 27078605  # ✅ তোমার আসল api_id বসাও
+api_hash = '52699dafb896a139789c88bc5c52f499'  # ✅ তোমার api_hash বসাও
 
 app = Flask(__name__)
-loop = asyncio.new_event_loop()
-asyncio.set_event_loop(loop)
+loop = asyncio.get_event_loop()
+nest_asyncio.apply()  # ✅ এটা মূল সমাধান
 
 @app.route('/')
 def home():
