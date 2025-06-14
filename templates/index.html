@@ -1,26 +1,17 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Telegram Session Login</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+    <title>Telegram Session Generator</title>
+    <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-  <div class="container">
-    <h2>Step 1: Enter Telegram Info</h2>
-    <form action="/send_code" method="POST">
-      <label for="phone">Phone Number (with country code):</label>
-      <input type="text" id="phone" name="phone" placeholder="+8801XXXXXXXXX" required />
-
-      <label for="api_id">API ID:</label>
-      <input type="number" id="api_id" name="api_id" placeholder="Your Telegram API ID" required />
-
-      <label for="api_hash">API Hash:</label>
-      <input type="text" id="api_hash" name="api_hash" placeholder="Your Telegram API Hash" required />
-
-      <button type="submit">Send OTP</button>
-    </form>
-  </div>
+    <div class="container">
+        <h2>Telegram Session Generator</h2>
+        <form action="/get-session" method="post">
+            <input type="text" name="phone" placeholder="Enter your phone (+880...)" required>
+            <input type="text" name="code" placeholder="Enter OTP code (if received)">
+            <button type="submit">Generate Session</button>
+        </form>
+    </div>
 </body>
 </html>
