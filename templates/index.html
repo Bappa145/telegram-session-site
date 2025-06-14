@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Telegram Session Login</title>
+</head>
+<body>
+  <h2>Step 1: Enter Telegram Info</h2>
+  <form action="/send_code" method="POST">
+    <label>Phone Number (with +88):</label><br>
+    <input type="text" name="phone" required><br><br>
+
+    <label>API ID:</label><br>
+    <input type="text" name="api_id" required><br><br>
+
+    <label>API Hash:</label><br>
+    <input type="text" name="api_hash" required><br><br>
+
+    <button type="submit">Send OTP</button>
+  </form>
+</body>
+</html>
