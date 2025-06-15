@@ -1,60 +1,45 @@
-from flask import Flask, request, jsonify, render_template
-from telethon.sync import TelegramClient
-from telethon.sessions import StringSession
-from telethon.errors import SessionPasswordNeededError
-import asyncio
+app.py
 
-app = Flask(__name__)
+from flask import Flask, request, jsonify, render_template from telethon.sync import TelegramClient from telethon.sessions import StringSession from telethon.errors import SessionPasswordNeededError import asyncio
 
-API_ID = 27078605  # <-- নিজের API_ID বসাও
-API_HASH = "52699dafb896a139789c88bc5c52f499"  # <-- নিজের API_HASH বসাও
+app = Flask(name)
+
+API_ID = 123456  # <-- তোমার API ID বসাও API_HASH = 'your_api_hash'  # <-- তোমার API HASH বসাও
 
 sessions = {}
 
-@app.route('/')
-def index():
-    return render_template('index.html')
+@app.route('/') def index(): return render_template('index.html')
 
-@app.route('/send-code', methods=['POST'])
-def send_code():
-    data = request.get_json()
-    phone = data.get("phone")
+@app.route('/send-code', methods=['POST']) def send_code(): data = request.get_json() phone = data.get("phone")
 
-    async def process():
-        client = TelegramClient(StringSession(), API_ID, API_HASH)
-        await client.connect()
+async def process():
+    async with TelegramClient(StringSession(), API_ID, API_HASH) as client:
         await client.send_code_request(phone)
-        sessions[phone] = client
+        sessions[phone] = client.session.save()
 
-    try:
-        asyncio.run(process())
-        return jsonify({"status": "ok"})
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)})
+try:
+    asyncio.new_event_loop().run_until_complete(process())
+    return jsonify({"status": "ok"})
+except Exception as e:
+    return jsonify({"status": "error", "message": str(e)})
 
-@app.route('/verify-code', methods=['POST'])
-def verify_code():
-    data = request.get_json()
-    phone = data.get("phone")
-    code = data.get("code")
+@app.route('/verify-code', methods=['POST']) def verify_code(): data = request.get_json() phone = data.get("phone") code = data.get("code") session_string = sessions.get(phone)
 
-    client = sessions.get(phone)
-    if not client:
-        return jsonify({"status": "error", "message": "No session found for this phone."})
+if not session_string:
+    return jsonify({"status": "error", "message": "No session found for this phone"})
 
-    async def login():
+async def verify():
+    async with TelegramClient(StringSession(session_string), API_ID, API_HASH) as client:
         await client.sign_in(phone, code)
-        string_session = client.session.save()
-        await client.disconnect()
-        return string_session
+        return client.session.save()
 
-    try:
-        session_string = asyncio.run(login())
-        return jsonify({"status": "ok", "session": session_string})
-    except SessionPasswordNeededError:
-        return jsonify({"status": "error", "message": "2FA password required!"})
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)})
+try:
+    new_session = asyncio.new_event_loop().run_until_complete(verify())
+    return jsonify({"status": "ok", "session": new_session})
+except SessionPasswordNeededError:
+    return jsonify({"status": "error", "message": "2FA password required!"})
+except Exception as e:
+    return jsonify({"status": "error", "message": str(e)})
 
-if __name__ == '__main__':
-    app.run(debug=True)
+if name == 'main': app.run(debug=True)
+
