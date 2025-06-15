@@ -30,7 +30,6 @@
 
     <script>
         let currentPhone = '';
-        let phoneCodeHash = '';
 
         async function sendCode() {
             const phone = document.querySelector('[name="phone"]').value;
@@ -43,7 +42,6 @@
 
             if (data.status === 'ok') {
                 currentPhone = phone;
-                phoneCodeHash = data.phone_code_hash;
                 document.getElementById('step-phone').style.display = 'none';
                 document.getElementById('step-code').style.display = 'block';
             } else {
@@ -56,7 +54,7 @@
             const res = await fetch('/verify-code', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ phone: currentPhone, code, phone_code_hash: phoneCodeHash })
+                body: JSON.stringify({ phone: currentPhone, code })
             });
             const data = await res.json();
 
