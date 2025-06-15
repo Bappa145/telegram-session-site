@@ -6,10 +6,8 @@ import asyncio
 
 app = Flask(__name__)
 
-API_ID = 27078605  # তোমার API ID বসাও
-API_HASH = '52699dafb896a139789c88bc5c52f499'  # তোমার API HASH বসাও
-
-phone_code_dict = {}  # ফোন নাম্বারের সাথে কোড match করার জন্য
+API_ID = 27078605  # Replace with your API ID
+API_HASH = '52699dafb896a139789c88bc5c52f499'  # Replace with your API HASH
 
 @app.route('/')
 def index():
@@ -24,15 +22,12 @@ def send_code():
         client = TelegramClient(StringSession(), API_ID, API_HASH)
         await client.connect()
         sent = await client.send_code_request(phone)
-        phone_code_dict[phone] = {
-            'code_hash': sent.phone_code_hash
-        }
         await client.disconnect()
-        return True
+        return sent.phone_code_hash
 
     try:
-        asyncio.run(send())
-        return jsonify({'status': 'ok'})
+        code_hash = asyncio.run(send())
+        return jsonify({'status': 'ok', 'phone_code_hash': code_hash})
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)})
 
@@ -41,24 +36,21 @@ def verify_code():
     data = request.get_json()
     phone = data.get('phone')
     code = data.get('code')
+    phone_code_hash = data.get('phone_code_hash')
 
     async def verify():
         client = TelegramClient(StringSession(), API_ID, API_HASH)
         await client.connect()
-        try:
-            await client.sign_in(phone=phone, code=code)
-            session_string = client.session.save()
-            return session_string
-        except SessionPasswordNeededError:
-            return '2FA'
-        finally:
-            await client.disconnect()
+        await client.sign_in(phone=phone, code=code, phone_code_hash=phone_code_hash)
+        session_string = client.session.save()
+        await client.disconnect()
+        return session_string
 
     try:
-        result = asyncio.run(verify())
-        if result == '2FA':
-            return jsonify({'status': 'error', 'message': '2FA password required'})
-        return jsonify({'status': 'ok', 'session': result})
+        session = asyncio.run(verify())
+        return jsonify({'status': 'ok', 'session': session})
+    except SessionPasswordNeededError:
+        return jsonify({'status': 'error', 'message': '2FA password required'})
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)})
 
