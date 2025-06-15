@@ -4,8 +4,8 @@ from telethon.sessions import StringSession
 from telethon.errors import SessionPasswordNeededError
 import asyncio
 
-api_id = 'YOUR_API_ID'
-api_hash = 'YOUR_API_HASH'
+api_id = '27078605'
+api_hash = '52699dafb896a139789c88bc5c52f499'
 
 app = Flask(__name__)
 loop = asyncio.new_event_loop()
