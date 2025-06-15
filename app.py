@@ -6,10 +6,10 @@ import asyncio
 
 app = Flask(__name__)
 
-API_ID = 27078605  # এখানে তোমার API ID বসাও
-API_HASH = '52699dafb896a139789c88bc5c52f499'  # এখানে তোমার API HASH বসাও
+API_ID = 27078605  # তোমার API ID বসাও
+API_HASH = '52699dafb896a139789c88bc5c52f499'  # তোমার API HASH বসাও
 
-clients = {}
+phone_code_dict = {}  # ফোন নাম্বারের সাথে কোড match করার জন্য
 
 @app.route('/')
 def index():
@@ -20,21 +20,21 @@ def send_code():
     data = request.get_json()
     phone = data.get('phone')
 
-    async def async_send_code():
+    async def send():
         client = TelegramClient(StringSession(), API_ID, API_HASH)
         await client.connect()
-        await client.send_code_request(phone)
-        clients[phone] = client
+        sent = await client.send_code_request(phone)
+        phone_code_dict[phone] = {
+            'code_hash': sent.phone_code_hash
+        }
+        await client.disconnect()
+        return True
 
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
     try:
-        loop.run_until_complete(async_send_code())
+        asyncio.run(send())
         return jsonify({'status': 'ok'})
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)})
-    finally:
-        loop.close()
 
 @app.route('/verify-code', methods=['POST'])
 def verify_code():
@@ -42,27 +42,25 @@ def verify_code():
     phone = data.get('phone')
     code = data.get('code')
 
-    async def async_verify():
-        client = clients.get(phone)
-        if not client:
-            raise Exception("Client not found")
+    async def verify():
+        client = TelegramClient(StringSession(), API_ID, API_HASH)
         await client.connect()
-        await client.sign_in(phone=phone, code=code)
-        session_string = client.session.save()
-        await client.disconnect()
-        return session_string
+        try:
+            await client.sign_in(phone=phone, code=code)
+            session_string = client.session.save()
+            return session_string
+        except SessionPasswordNeededError:
+            return '2FA'
+        finally:
+            await client.disconnect()
 
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
     try:
-        session_string = loop.run_until_complete(async_verify())
-        return jsonify({'status': 'ok', 'session': session_string})
-    except SessionPasswordNeededError:
-        return jsonify({'status': 'error', 'message': '2FA password required'})
+        result = asyncio.run(verify())
+        if result == '2FA':
+            return jsonify({'status': 'error', 'message': '2FA password required'})
+        return jsonify({'status': 'ok', 'session': result})
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)})
-    finally:
-        loop.close()
 
 if __name__ == '__main__':
     app.run(debug=True)
