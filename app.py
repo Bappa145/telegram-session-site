@@ -4,7 +4,8 @@ from flask import Flask, request, jsonify, render_template from telethon.sync im
 
 app = Flask(name)
 
-API_ID = 123456  # <-- তোমার API ID বসাও API_HASH = 'your_api_hash'  # <-- তোমার API HASH বসাও
+API_ID = 27078605  # <-- তোমার API ID বসাও 
+API_HASH = '52699dafb896a139789c88bc5c52f499'  # <-- তোমার API HASH বসাও
 
 sessions = {}
 
