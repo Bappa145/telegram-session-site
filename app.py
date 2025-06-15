@@ -1,60 +1,60 @@
 from flask import Flask, request, jsonify, render_template
 from telethon.sync import TelegramClient
 from telethon.sessions import StringSession
+from telethon.errors import SessionPasswordNeededError
 import asyncio
 
 app = Flask(__name__)
 
-# ⛔️ Replace with your own credentials from https://my.telegram.org
-API_ID = 27078605      # 🔁 তোমার API ID বসাও
-API_HASH = '52699dafb896a139789c88bc5c52f499'  # 🔁 তোমার API HASH বসাও
+API_ID = 27078605  # <-- নিজের API_ID বসাও
+API_HASH = "52699dafb896a139789c88bc5c52f499"  # <-- নিজের API_HASH বসাও
 
-# ✅ ফোন নাম্বার ও client স্টোর করার dict
-phone_dict = {}
-client_dict = {}
+sessions = {}
 
 @app.route('/')
-def home():
+def index():
     return render_template('index.html')
 
 @app.route('/send-code', methods=['POST'])
 def send_code():
     data = request.get_json()
-    phone = data.get('phone')
-    
-    try:
+    phone = data.get("phone")
+
+    async def process():
         client = TelegramClient(StringSession(), API_ID, API_HASH)
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        loop.run_until_complete(client.connect())
-        loop.run_until_complete(client.send_code_request(phone))
+        await client.connect()
+        await client.send_code_request(phone)
+        sessions[phone] = client
 
-        phone_dict[phone] = True
-        client_dict[phone] = client
-
-        return jsonify({'status': 'ok'})
+    try:
+        asyncio.run(process())
+        return jsonify({"status": "ok"})
     except Exception as e:
-        return jsonify({'status': 'error', 'message': str(e)})
+        return jsonify({"status": "error", "message": str(e)})
 
 @app.route('/verify-code', methods=['POST'])
 def verify_code():
     data = request.get_json()
-    phone = data.get('phone')
-    code = data.get('code')
+    phone = data.get("phone")
+    code = data.get("code")
 
-    if not phone_dict.get(phone) or not client_dict.get(phone):
-        return jsonify({'status': 'error', 'message': 'Session expired or phone not found'})
+    client = sessions.get(phone)
+    if not client:
+        return jsonify({"status": "error", "message": "No session found for this phone."})
 
-    client = client_dict[phone]
+    async def login():
+        await client.sign_in(phone, code)
+        string_session = client.session.save()
+        await client.disconnect()
+        return string_session
 
     try:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        loop.run_until_complete(client.sign_in(phone, code))
-        session_str = client.session.save()
-        return jsonify({'session': session_str})
+        session_string = asyncio.run(login())
+        return jsonify({"status": "ok", "session": session_string})
+    except SessionPasswordNeededError:
+        return jsonify({"status": "error", "message": "2FA password required!"})
     except Exception as e:
-        return jsonify({'status': 'error', 'message': str(e)})
+        return jsonify({"status": "error", "message": str(e)})
 
 if __name__ == '__main__':
     app.run(debug=True)
