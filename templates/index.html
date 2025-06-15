@@ -1,54 +1,84 @@
-<!DOCTYPE html>
-<html>
+<!DOCTYPE html><html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Telegram Session Generator</title>
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
     <div class="container">
-        <h2>Telegram Session Generator</h2>
-        <form id="sessionForm">
-            <input type="text" name="phone" id="phone" placeholder="Enter your phone (+880...)" required>
-            <input type="text" name="code" id="code" placeholder="Enter OTP code (if received)">
-            <button type="submit">Generate Session</button>
-        </form>
-
-        <div id="resultBox" style="display: none;">
-            <h3>🎉 Your Session String:</h3>
-            <textarea id="sessionText" readonly></textarea><br>
-            <button onclick="copySession()">📋 Copy Session</button>
-        </div>
+        <h2>🔐 Telegram Session Generator</h2>
+        <div class="step" id="step1">
+            <label>📱 Phone Number</label>
+            <input type="text" id="phone" placeholder="+8801XXXXXXXXX">
+            <button onclick="sendCode()">Send Code</button>
+        </div><div class="step" id="step2" style="display:none">
+        <label>✅ Enter OTP Code</label>
+        <input type="text" id="code" placeholder="Enter the code you received">
+        <button onclick="verifyCode()">Get Session</button>
     </div>
 
-    <script>
-        const form = document.getElementById('sessionForm');
-        const resultBox = document.getElementById('resultBox');
-        const sessionText = document.getElementById('sessionText');
+    <div class="step" id="step3" style="display:none">
+        <label>📄 Session String</label>
+        <textarea id="session" readonly></textarea>
+        <button onclick="copySession()">Copy Session</button>
+    </div>
 
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
+    <div id="message"></div>
+</div>
 
-            const formData = new FormData(form);
-            const res = await fetch('/get-session', {
-                method: 'POST',
-                body: formData
-            });
-            const data = await res.json();
-
-            if (data.session) {
-                sessionText.value = data.session;
-                resultBox.style.display = 'block';
+<script>
+    function sendCode() {
+        const phone = document.getElementById("phone").value;
+        fetch("/send-code", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({ phone })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === "ok") {
+                document.getElementById("step2").style.display = "block";
+                showMessage("Code sent successfully!", false);
             } else {
-                sessionText.value = 'Something went wrong.';
-                resultBox.style.display = 'block';
+                showMessage("Error: " + data.message, true);
             }
         });
+    }
 
-        function copySession() {
-            sessionText.select();
-            document.execCommand('copy');
-            alert('Session copied to clipboard!');
-        }
-    </script>
+    function verifyCode() {
+        const phone = document.getElementById("phone").value;
+        const code = document.getElementById("code").value;
+        fetch("/verify-code", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({ phone, code })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.session) {
+                document.getElementById("session").value = data.session;
+                document.getElementById("step3").style.display = "block";
+                showMessage("Session created!", false);
+            } else {
+                showMessage("Error: " + data.message, true);
+            }
+        });
+    }
+
+    function copySession() {
+        const session = document.getElementById("session");
+        session.select();
+        document.execCommand("copy");
+        showMessage("Copied to clipboard!", false);
+    }
+
+    function showMessage(msg, isError) {
+        const m = document.getElementById("message");
+        m.innerText = msg;
+        m.style.color = isError ? "red" : "green";
+    }
+</script>
+
 </body>
 </html>
