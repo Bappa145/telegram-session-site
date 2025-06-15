@@ -9,8 +9,8 @@ nest_asyncio.apply()
 loop = asyncio.get_event_loop()
 app = Flask(__name__)
 
-API_ID = 123456  # ✅ তোমার API ID দাও
-API_HASH = 'your_api_hash'  # ✅ তোমার API HASH দাও
+API_ID = 27078605  # ✅ তোমার API ID দাও
+API_HASH = '52699dafb896a139789c88bc5c52f499'  # ✅ তোমার API HASH দাও
 
 # Global dict to store client and hash
 client_store = {}
