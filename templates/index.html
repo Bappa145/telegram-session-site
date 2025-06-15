@@ -1,4 +1,5 @@
-<!-- index.html --><!DOCTYPE html><html lang="en">
+<!DOCTYPE html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,64 +13,67 @@
             <div class="form-step" id="step-phone">
                 <input type="text" name="phone" placeholder="Phone Number (+880...)" required>
                 <button type="button" onclick="sendCode()">Send Code</button>
-            </div><div class="form-step" id="step-code" style="display: none;">
-            <input type="text" name="code" placeholder="Enter OTP Code" required>
-            <button type="button" onclick="submitCode()">Login</button>
+            </div>
+
+            <div class="form-step" id="step-code" style="display: none;">
+                <input type="text" name="code" placeholder="Enter OTP Code" required>
+                <button type="button" onclick="submitCode()">Login</button>
+            </div>
+        </form>
+
+        <div id="sessionBox" style="display: none;">
+            <h3>Your Telegram Session:</h3>
+            <textarea id="sessionText" readonly></textarea>
+            <button onclick="copySession()">Copy Session</button>
         </div>
-    </form>
-
-    <div id="sessionBox" style="display: none;">
-        <h3>Your Telegram Session:</h3>
-        <textarea id="sessionText" readonly></textarea>
-        <button onclick="copySession()">Copy Session</button>
     </div>
-</div>
 
-<script>
-    let currentPhone = '';
+    <script>
+        let currentPhone = '';
+        let phoneCodeHash = '';
 
-    async function sendCode() {
-        const phone = document.querySelector('[name="phone"]').value;
-        const res = await fetch('/send-code', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ phone })
-        });
-        const data = await res.json();
+        async function sendCode() {
+            const phone = document.querySelector('[name="phone"]').value;
+            const res = await fetch('/send-code', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone })
+            });
+            const data = await res.json();
 
-        if (data.status === 'ok') {
-            currentPhone = phone;
-            document.getElementById('step-phone').style.display = 'none';
-            document.getElementById('step-code').style.display = 'block';
-        } else {
-            alert(data.message || 'Failed to send code');
+            if (data.status === 'ok') {
+                currentPhone = phone;
+                phoneCodeHash = data.phone_code_hash;
+                document.getElementById('step-phone').style.display = 'none';
+                document.getElementById('step-code').style.display = 'block';
+            } else {
+                alert(data.message || 'Failed to send code');
+            }
         }
-    }
 
-    async function submitCode() {
-        const code = document.querySelector('[name="code"]').value;
-        const res = await fetch('/verify-code', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ phone: currentPhone, code })
-        });
-        const data = await res.json();
+        async function submitCode() {
+            const code = document.querySelector('[name="code"]').value;
+            const res = await fetch('/verify-code', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone: currentPhone, code, phone_code_hash: phoneCodeHash })
+            });
+            const data = await res.json();
 
-        if (data.session) {
-            document.getElementById('sessionText').value = data.session;
-            document.getElementById('sessionBox').style.display = 'block';
-        } else {
-            alert(data.message || 'Login failed');
+            if (data.session) {
+                document.getElementById('sessionText').value = data.session;
+                document.getElementById('sessionBox').style.display = 'block';
+            } else {
+                alert(data.message || 'Login failed');
+            }
         }
-    }
 
-    function copySession() {
-        const text = document.getElementById('sessionText');
-        text.select();
-        document.execCommand('copy');
-        alert('Session copied to clipboard!');
-    }
-</script>
-
+        function copySession() {
+            const text = document.getElementById('sessionText');
+            text.select();
+            document.execCommand('copy');
+            alert('Session copied to clipboard!');
+        }
+    </script>
 </body>
 </html>
