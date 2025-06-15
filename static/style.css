@@ -1,31 +1,11 @@
-body {
-    background: #f0f0f0;
-    font-family: sans-serif;
-}
-.container {
-    width: 400px;
-    margin: 100px auto;
-    background: #fff;
-    padding: 30px;
-    border-radius: 10px;
-    text-align: center;
-    box-shadow: 0 0 10px #aaa;
-}
-input {
+textarea {
     width: 90%;
+    height: 100px;
+    margin-top: 10px;
     padding: 10px;
-    margin: 10px 0;
+    font-family: monospace;
     border-radius: 5px;
     border: 1px solid #ccc;
-}
-button {
-    padding: 10px 20px;
-    background: #0088cc;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-}
-button:hover {
-    background: #0077aa;
+    resize: none;
+    font-size: 14px;
 }
