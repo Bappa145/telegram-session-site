@@ -7,11 +7,48 @@
 <body>
     <div class="container">
         <h2>Telegram Session Generator</h2>
-        <form action="/get-session" method="post">
-            <input type="text" name="phone" placeholder="Enter your phone (+880...)" required>
-            <input type="text" name="code" placeholder="Enter OTP code (if received)">
+        <form id="sessionForm">
+            <input type="text" name="phone" id="phone" placeholder="Enter your phone (+880...)" required>
+            <input type="text" name="code" id="code" placeholder="Enter OTP code (if received)">
             <button type="submit">Generate Session</button>
         </form>
+
+        <div id="resultBox" style="display: none;">
+            <h3>🎉 Your Session String:</h3>
+            <textarea id="sessionText" readonly></textarea><br>
+            <button onclick="copySession()">📋 Copy Session</button>
+        </div>
     </div>
+
+    <script>
+        const form = document.getElementById('sessionForm');
+        const resultBox = document.getElementById('resultBox');
+        const sessionText = document.getElementById('sessionText');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const formData = new FormData(form);
+            const res = await fetch('/get-session', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await res.json();
+
+            if (data.session) {
+                sessionText.value = data.session;
+                resultBox.style.display = 'block';
+            } else {
+                sessionText.value = 'Something went wrong.';
+                resultBox.style.display = 'block';
+            }
+        });
+
+        function copySession() {
+            sessionText.select();
+            document.execCommand('copy');
+            alert('Session copied to clipboard!');
+        }
+    </script>
 </body>
 </html>
