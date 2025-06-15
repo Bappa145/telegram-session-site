@@ -1,69 +1,57 @@
 from flask import Flask, request, jsonify, render_template
-from telethon import TelegramClient
+from telethon.sync import TelegramClient
 from telethon.sessions import StringSession
 from telethon.errors import SessionPasswordNeededError
-import nest_asyncio
 import asyncio
 
-nest_asyncio.apply()
-loop = asyncio.get_event_loop()
+api_id = 'YOUR_API_ID'
+api_hash = 'YOUR_API_HASH'
+
 app = Flask(__name__)
+loop = asyncio.new_event_loop()
+asyncio.set_event_loop(loop)
 
-API_ID = 27078605  # ✅ তোমার API ID দাও
-API_HASH = '52699dafb896a139789c88bc5c52f499'  # ✅ তোমার API HASH দাও
-
-# Global dict to store client and hash
-client_store = {}
+session_dict = {}
 
 @app.route('/')
-def home():
+def index():
     return render_template('index.html')
 
 @app.route('/send-code', methods=['POST'])
 def send_code():
     data = request.get_json()
-    phone = data.get("phone")
+    phone = data['phone']
+    client = TelegramClient(StringSession(), api_id, api_hash, loop=loop)
+    session_dict[phone] = client
 
-    async def run():
-        client = TelegramClient(StringSession(), API_ID, API_HASH)
+    async def main():
         await client.connect()
-        sent = await client.send_code_request(phone)
-        # Store the client & phone_code_hash together
-        client_store[phone] = {
-            "client": client,
-            "phone_code_hash": sent.phone_code_hash
-        }
-        return sent.phone_code_hash
-
-    try:
-        phone_code_hash = loop.run_until_complete(run())
+        await client.send_code_request(phone)
         return jsonify({'status': 'ok'})
-    except Exception as e:
-        return jsonify({'status': 'error', 'message': str(e)})
+
+    return loop.run_until_complete(main())
 
 @app.route('/verify-code', methods=['POST'])
 def verify_code():
     data = request.get_json()
-    phone = data.get("phone")
-    code = data.get("code")
+    phone = data['phone']
+    code = data['code']
+    client = session_dict.get(phone)
+    if not client:
+        return jsonify({'message': 'Session not found'}), 400
 
-    if phone not in client_store:
-        return jsonify({'status': 'error', 'message': 'Session not found'})
+    async def main():
+        try:
+            await client.connect()
+            await client.sign_in(phone, code)
+            session_str = client.session.save()
+            return jsonify({'session': session_str})
+        except SessionPasswordNeededError:
+            return jsonify({'message': '2FA password required'})
+        except Exception as e:
+            return jsonify({'message': str(e)})
 
-    stored = client_store[phone]
-    client = stored["client"]
-    phone_code_hash = stored["phone_code_hash"]
+    return loop.run_until_complete(main())
 
-    async def run():
-        await client.sign_in(phone=phone, code=code, phone_code_hash=phone_code_hash)
-        session_string = client.session.save()
-        await client.disconnect()
-        return session_string
-
-    try:
-        session = loop.run_until_complete(run())
-        return jsonify({'status': 'ok', 'session': session})
-    except SessionPasswordNeededError:
-        return jsonify({'status': 'error', 'message': '2FA password required'})
-    except Exception as e:
-        return jsonify({'status': 'error', 'message': str(e)})
+if __name__ == '__main__':
+    app.run(debug=True)
